@@ -1,10 +1,12 @@
 # This program is to populate online website with live results during the competition
 # main program to fetch marks from MS-access database and push to website
 
-import time, os, subprocess, pandas
+import time, os, subprocess, pandas#, csv
 from shutil import copyfile
 from pathlib import Path
-
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from gspread.ns import _ns
 
 #def main():
 
@@ -59,7 +61,26 @@ how = 'inner',on='idGymnaste')
 df_joinedTables['Total'] = (df_joinedTables['sol'] + df_joinedTables['arcon'] +
 df_joinedTables['anneaux'] + df_joinedTables['Saut'] +
 df_joinedTables['parallele'] + df_joinedTables['fixe'])
+df_joinedTables.sort_values(by=['Nom', 'Prenom'], inplace=True)
 
-#export the data to display in csv file
-df_joinedTables.to_csv(pathDestination + '/merged.csv', columns=['Prenom','Nom', 'NomClub','sol',
-                     'arcon', 'anneaux', 'Saut', 'parallele', 'fixe', 'Total'], index=False)
+### 3/ send csv file to google spreadsheet via API to be displayed
+scope = ['https://spreadsheets.google.com/feeds',
+    'https://www.googleapis.com/auth/drive']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('MyProject8533.json', scope)
+gc = gspread.authorize(credentials)
+#open an existing spreadsheet
+sheet = gc.open('ResultatsCoupeQuebec')
+ws = sheet.get_worksheet(0)
+#clear all values before updating
+# to be activated the first time the category has changed
+ws.clear()
+
+#find the range of cells with the size of the dataframe
+cell_list = ws.range('A2:J' + str(df_joinedTables.shape[0] + 1))
+
+cell_values = df_joinedTables[['Prenom','Nom', 'NomClub','sol','arcon', 'anneaux',
+'Saut', 'parallele', 'fixe', 'Total']].values.flatten()
+
+for counter, val in enumerate(cell_values):  #gives us a tuple of an index and value
+    cell_list[counter].value = val    #use the index on cell_list and the val from cell_values
+ws.update_cells(cell_list)
