@@ -84,8 +84,8 @@ def main():
         cell_list[counter].value = val    #use the index on cell_list and the val from cell_values
     ws.update_cells(cell_list)
 
-#while True:
-main()
-    # print('Website updated, waiting before next iteration... last update at ',
-    # time.strftime("%Hh%m", time.localtime()))
-    # time.sleep(30)
+while True:
+    main()
+    print('Website updated, waiting before next iteration... last update at ',
+    time.strftime("%Hh%m", time.localtime()))
+    time.sleep(30)
