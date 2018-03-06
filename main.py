@@ -16,8 +16,8 @@ def copy_mdb_file(PATHDESTINATION):
 
     # Copy the synchronized database file to local Drive every hour
     path_to_original_database = '/Users/rpgb/Dropbox/CoupeQuebec/2018/BDD-live/2eCoupeQcGAM.mdb'
-    timestamp = time.strftime("%Y%m%d_%Hh", time.localtime())
-    local_database = PATHDESTINATION + '/2eCOupeQcGAM_' + timestamp + '.mdb'
+    timestamp = time.strftime('%Y%m%d_%Hh', time.localtime())
+    local_database = PATHDESTINATION + '/2eCoupeQcGAM_' + timestamp + '.mdb'
     # copy and overwrite older file to update the data but keep a backup every hour
     copyfile(path_to_original_database, local_database)
     return local_database
@@ -45,10 +45,10 @@ def get_database_info(local_database):
            'Prov', 'Age', 'Equipe']
 
     # Select lines for the 2eme coupe quebec CPS
-    df_tblNotes = df_tblNotes[df_tblNotes['Competition'] == "2e Coupe - CPS"]
+    df_tblNotes = df_tblNotes[df_tblNotes['Competition'] == '2e Coupe - CPS']
     # select lines for current category
 
-    #condition = ((df_tblGymnastes['Categorie'] == "Niveau 2A") | (df_tblGymnastes['Categorie'] == "National Ouvert") )
+    #condition = ((df_tblGymnastes['Categorie'] == 'Niveau 2A') | (df_tblGymnastes['Categorie'] == 'National Ouvert') )
     categorieSelected = get_category(df_tblGymnastes)
     df_tblGymnastes = df_tblGymnastes[categorieSelected]
 
@@ -89,31 +89,39 @@ def send_to_google_spreadsheet_via_api(df_joinedTables):
     ws.update_cells(cell_list)
 
 def get_category(df_tblGymnastes):
+    #choose one of the following category by switching to True.
+    saturday_morning = False
+    saturday_afternoon = False
+    saturday_evening = False
+    sunday_morning = False
+    sunday_afternoon = False
+    sunday_evening = True
 
-    ######### program, uncomment the current category
-    ### Saturday from 9am to 12pm
-    categorieSelected = ((df_tblGymnastes['Categorie'] == "Niveau 3 U13") |
-    (df_tblGymnastes['Categorie'] == "Niveau 3 13+") |
-    (df_tblGymnastes['Categorie'] == "Élite 3"))
-    ### Saturday from 1pm to 5pm
-    # categorieSelected = ((df_tblGymnastes['Categorie'] == "Niveau 5") |
-    # (df_tblGymnastes['Categorie'] == "National Ouvert") |
-    # (df_tblGymnastes['Categorie'] == "Junior") |
-    # (df_tblGymnastes['Categorie'] == "Senior"))
-    # # Saturday from 5h45pm to 8pm
-    # categorieSelected = ((df_tblGymnastes['Categorie'] == "Niveau 4 U13") |
-    # (df_tblGymnastes['Categorie'] == "Niveau 4 13+")
-    ### Sunday 8am to 12pm
-    # categorieSelected = ((df_tblGymnastes['Categorie'] == "Niveau 2A") |
-    #(df_tblGymnastes['Categorie'] == "Niveau 2C")
-    ### Sunday 12.30pm to 3.45pm
-    # categorieSelected = ((df_tblGymnastes['Categorie'] == "Niveau 2B") |
-    #(df_tblGymnastes['Categorie'] == "Niveau 2D")
-    ### Sunday 4pm to 8pm
-    # categorieSelected = ((df_tblGymnastes['Categorie'] == "Capital City")
-
+    ######### program
+    if saturday_morning:
+        # Saturday from 9am to 12pm
+        categorieSelected = df_tblGymnastes['Categorie'].isin(['Niveau 3 U13', 
+                'Niveau 3 13+', 'Élite 3'])                  
+    elif saturday_afternoon:
+        # Saturday from 1pm to 5pm
+        categorieSelected = df_tblGymnastes['Categorie'].isin(['Niveau 5',
+                'National Ouvert', 'Junior', 'Senior'])
+    elif saturday_evening:
+        # Saturday from 5h45pm to 8pm
+        categorieSelected = df_tblGymnastes['Categorie'].isin(['Niveau 4 U13',
+                'Niveau 4 13+'])
+    elif sunday_morning:
+        # Sunday 8am to 12pm
+        categorieSelected = df_tblGymnastes['Categorie'].isin(['Niveau 2A', 
+                'Niveau 2C'])
+    elif sunday_afternoon:
+        # Sunday 12.30pm to 3.45pm
+        categorieSelected = df_tblGymnastes['Categorie'].isin(['Niveau 2B', 
+                    'Niveau 2D'])
+    elif sunday_evening:
+        # Sunday 4pm to 8pm
+        categorieSelected = df_tblGymnastes['Categorie'] == 'Capital City'
     return categorieSelected
-
 
 
 while True:
@@ -121,5 +129,5 @@ while True:
     df_joinedTables = get_database_info(local_database)
     send_to_google_spreadsheet_via_api(df_joinedTables)
     print('Website updated, waiting before next iteration... last update at ',
-    time.strftime("%Hh%m", time.localtime()))
+            time.strftime('%Hh%m', time.localtime()))
     time.sleep(30)
