@@ -1,91 +1,139 @@
 # This program is to populate online website with live results during the competition
 # main program to fetch marks from MS-access database and push to website
 
-import time, os, subprocess, pandas#, csv
+import pandas
+import subprocess
+import time
 from shutil import copyfile
-from pathlib import Path
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from gspread.ns import _ns
-from functions import getcategory
 
-def main():
+# constants
+PATH_DESTINATION = '/Users/rpgb/Documents/CoupeQuebec/2018'
+PRIVATE_KEY_JSON = '/Users/rpgb/Documents/CoupeQuebec/2018/MyProject8533.json'
+ORIGINAL_DATABASE_PATH = '/Users/rpgb/Dropbox/CoupeQuebec/2018/BDD-live/2eCoupeQcGAM.mdb'
 
-    ### 1/ Copy the sync database file to local Drive every hour
-    pathToOriginalDatabase = '/Users/rpgb/Dropbox/CoupeQuebec/2018/BDD-live/2eCOupeQcGAM.mdb'
-    pathDestination = '/Users/rpgb/Documents/CoupeQuebec/2018'
-    timeStamp = time.strftime("%Y%m%d_%Hh", time.localtime())
-    fileToCopy = pathDestination + '/2eCOupeQcGAM_' + timeStamp + '.mdb'
-    # copy and overwrite older file to update the data
-    copyfile(pathToOriginalDatabase, fileToCopy)
+def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
+    """
+    :param PATH_DESTINATION: location to save the database locally
+    :param ORIGINAL_DATABASE_PATH: fullpath to DB to save
+    :return: path_to_local_database: full path with DB local filename that changes every hour
+    """
+    customed_timestamp = time.strftime('%Y%m%d_%Hh', time.localtime())
+    path_to_local_database = PATH_DESTINATION + '/2eCoupeQcGAM_' + customed_timestamp + '.mdb'
 
-    ### 2/ Read local mdb database and get info from tables
-    DATABASE = fileToCopy
+    # copy and overwrite older file to update the data but keep a backup every hour
+    copyfile(ORIGINAL_DATABASE_PATH, path_to_local_database)
 
-    # Get table names using mdb-tables
-    table_names = subprocess.Popen(['mdb-tables', '-1', DATABASE], stdout=subprocess.PIPE).communicate()[0]
-    tables = table_names.splitlines()
+    return path_to_local_database
 
-    # Walk through each table and dump as CSV file using 'mdb-export'
-    for table in tables:
-        if table == b'tblNote':
-            filename = pathDestination + '/exportedTable_tblNote.csv'
-            with open(filename, 'wb') as f:
-                subprocess.check_call(['mdb-export', DATABASE, table], stdout=f)
-        if table == b'tblGymnaste':
-            filename = pathDestination + '/exportedTable_tblGymnaste.csv'
-            with open(filename, 'wb') as f:
-                subprocess.check_call(['mdb-export', DATABASE, table], stdout=f)
+
+def get_info_to_be_displayed_from_database(path_to_local_database):
+    """
+    :param path_to_local_database: full path with DB local filename that changes every hour
+    :return: df_tbl_notes_with_gymnastes: contains the notes with the gymnastes names to be displayed
+    """
+
+    # Select the desired tables and dump as CSV file using 'mdb-export'
+    for table_name in ('tblNote', 'tblGymnaste'):
+        filename = PATH_DESTINATION + '/exportedTable_' + table_name + '.csv'
+        with open(filename, 'wb') as f:
+            subprocess.check_call(['mdb-export', path_to_local_database, table_name], stdout=f)
 
     # load csv in dataframe to do join on data and export result in csv with pandas
-    df_tblNotes = pandas.read_csv(pathDestination + '/exportedTable_tblNote.csv')
-    df_tblGymnastes = pandas.read_csv(pathDestination + '/exportedTable_tblGymnaste.csv')
+    # in the df names, I keep the original table name
+    df_tbl_notes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblNote.csv')
+    df_tbl_gymnastes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblGymnaste.csv')
 
     # switch NoAffiliation and idGymnaste which are inverted
-    df_tblGymnastes.columns = ['NoAffiliation','idGymnaste', 'Nom', 'Prenom', 'NomClub', 'Categorie',
-           'Prov', 'Age', 'Equipe']
+    df_tbl_gymnastes.columns = ['NoAffiliation', 'idGymnaste', 'Nom', 'Prenom', 'NomClub', 'Categorie',
+                                'Prov', 'Age', 'Equipe']
 
-    #Select lines for the 2eme coupe quebec CPS
-    df_tblNotes = df_tblNotes[df_tblNotes['Competition'] == "2e Coupe - CPS"]
+    # Select lines for the 2eme coupe quebec CPS
+    df_tbl_notes = df_tbl_notes[df_tbl_notes['Competition'] == '2e Coupe - CPS']
+
     # select lines for current category
-
-    #condition = ((df_tblGymnastes['Categorie'] == "Niveau 2A") | (df_tblGymnastes['Categorie'] == "National Ouvert") )
-    categorieSelected = getcategory(df_tblGymnastes)
-    df_tblGymnastes = df_tblGymnastes[categorieSelected]
+    categorie_selected = get_category(df_tbl_gymnastes)
+    df_tbl_gymnastes = df_tbl_gymnastes[categorie_selected]
 
     # inner join the 2 tables on idGymnaste
-    df_joinedTables = df_tblNotes.join(df_tblGymnastes.set_index('idGymnaste'),
-    how = 'inner',on='idGymnaste')
+    df_tbl_notes_with_gymnastes = df_tbl_notes.join(df_tbl_gymnastes.set_index('idGymnaste'),
+                                                    how='inner', on='idGymnaste')
 
     # add the column total
-    df_joinedTables['Total'] = (df_joinedTables['sol'] + df_joinedTables['arcon'] +
-    df_joinedTables['anneaux'] + df_joinedTables['Saut'] +
-    df_joinedTables['parallele'] + df_joinedTables['fixe'])
-    df_joinedTables.sort_values(by=['Nom', 'Prenom'], inplace=True)
-    df_joinedTables['Nom'] = df_joinedTables['Prenom'] + ' ' + df_joinedTables['Nom'].str.upper()
+    df_tbl_notes_with_gymnastes['Total'] = (df_tbl_notes_with_gymnastes['sol'] + df_tbl_notes_with_gymnastes['arcon'] +
+                                            df_tbl_notes_with_gymnastes['anneaux'] + df_tbl_notes_with_gymnastes['Saut'] +
+                                            df_tbl_notes_with_gymnastes['parallele'] + df_tbl_notes_with_gymnastes['fixe'])
+    # sort dataframe by Name and firstname
+    df_tbl_notes_with_gymnastes.sort_values(by=['Nom', 'Prenom'], inplace=True)
+    # concatenate name and firstname
+    df_tbl_notes_with_gymnastes['Nom'] = df_tbl_notes_with_gymnastes['Prenom'] + ' ' + df_tbl_notes_with_gymnastes['Nom'].str.upper()
 
-    ### 3/ send csv file to google spreadsheet via API to be displayed
-    scope = ['https://spreadsheets.google.com/feeds',
-        'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('MyProject8533.json', scope)
+    return df_tbl_notes_with_gymnastes
+
+
+def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymnastes):
+    """
+    :param PRIVATE_KEY_JSON: path to the private key for the authentification for the API
+    :param df_tbl_notes_with_gymnastes:  contains the notes with the gymnastes names to be displayed
+    :return: none
+    """
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(PRIVATE_KEY_JSON, scope)
     gc = gspread.authorize(credentials)
-    #open an existing spreadsheet
+    # open an existing spreadsheet
     sheet = gc.open('ResultatsCoupeQuebec')
     ws = sheet.get_worksheet(0)
-    #clear all values before updating
+    # clear all values before updating
     ws.clear()
-    #find the range of cells with the size of the dataframe
-    cell_list = ws.range('A1:I' + str(df_joinedTables.shape[0]))
+    # find the range of cells with the size of the dataframe
+    cell_list = ws.range('A1:I' + str(df_tbl_notes_with_gymnastes.shape[0]))
 
-    cell_values = df_joinedTables[['Nom', 'NomClub','sol','arcon', 'anneaux',
-    'Saut', 'parallele', 'fixe', 'Total']].values.flatten()
+    cell_values = df_tbl_notes_with_gymnastes[['Nom', 'NomClub', 'sol', 'arcon', 'anneaux',
+                                   'Saut', 'parallele', 'fixe', 'Total']].values.flatten()
 
-    for counter, val in enumerate(cell_values):  #gives us a tuple of an index and value
-        cell_list[counter].value = val    #use the index on cell_list and the val from cell_values
+    for counter, val in enumerate(cell_values): 
+        cell_list[counter].value = val  # use the index on cell_list and the val from cell_values
     ws.update_cells(cell_list)
 
+
+def get_category(df_tbl_gymnastes):
+    """ select a category by manually switching the boolean variables"""
+    saturday_morning = True
+    saturday_afternoon = False
+    saturday_evening = False
+    sunday_morning = False
+    sunday_afternoon = False
+    # sunday_evening = False
+
+    # program
+    if saturday_morning:
+        # Saturday from 9am to 12pm
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 3 U13',
+                                                                'Niveau 3 13+', 'Élite 3'])
+    elif saturday_afternoon:
+        # Saturday from 1pm to 5pm
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 5',
+                                                                'National Ouvert', 'Junior', 'Senior'])
+    elif saturday_evening:
+        # Saturday from 5h45pm to 8pm
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 4 U13',
+                                                                'Niveau 4 13+'])
+    elif sunday_morning:
+        # Sunday 8am to 12pm
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2A',
+                                                                'Niveau 2C'])
+    elif sunday_afternoon:
+        # Sunday 12.30pm to 3.45pm
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2B',
+                                                                'Niveau 2D'])
+    return categorie_selected
+
+
 while True:
-    main()
+    local_database = copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION)
+    df_tbl_notes_with_gymnastes = get_info_to_be_displayed_from_database(local_database)
+    send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymnastes)
     print('Website updated, waiting before next iteration... last update at ',
-    time.strftime("%Hh%m", time.localtime()))
+          time.strftime('%Hh%m', time.localtime()))
     time.sleep(30)
