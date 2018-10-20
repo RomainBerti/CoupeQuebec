@@ -41,7 +41,7 @@ def get_info_to_be_displayed_from_database(path_to_local_database):
             subprocess.check_call(['mdb-export', path_to_local_database, table_name], stdout=f)
 
     # load csv in dataframe to do join on data and export result in csv with pandas
-    # in the df names, image keep the original table name
+    # in the df names, images keep the original table name
     df_tbl_notes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblNote.csv')
     df_tbl_gymnastes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblGymnaste.csv')
 
@@ -92,7 +92,7 @@ def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymna
     cell_values = df_tbl_notes_with_gymnastes[['Nom', 'NomClub', 'sol', 'arcon', 'anneaux',
                                    'Saut', 'parallele', 'fixe', 'Total']].values.flatten()
 
-    for counter, val in enumerate(cell_values): 
+    for counter, val in enumerate(cell_values):
         cell_list[counter].value = val  # use the index on cell_list and the val from cell_values
     ws.update_cells(cell_list)
 
