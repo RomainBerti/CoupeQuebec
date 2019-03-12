@@ -9,9 +9,9 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # constants
-PATH_DESTINATION = '/Users/rpgb/Documents/CoupeQuebec/2018'
-PRIVATE_KEY_JSON = '/Users/rpgb/Documents/CoupeQuebec/2018/MyProject8533.json'
-ORIGINAL_DATABASE_PATH = '/Users/rpgb/Dropbox/CoupeQuebec/2018/BDD-live/2eCoupeQcGAM.mdb'
+PATH_DESTINATION = '/Users/rpgb/Documents/CoupeQuebec/2019'
+PRIVATE_KEY_JSON = '/Users/rpgb/Documents/CoupeQuebec/2019/MyProject8533_2019.json'
+ORIGINAL_DATABASE_PATH = '/Users/rpgb/Documents/CoupeQuebec/2019/GAM2eCoupeQcCPS_2019.mdb'
 
 def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
     """
@@ -50,7 +50,8 @@ def get_info_to_be_displayed_from_database(path_to_local_database):
                                 'Prov', 'Age', 'Equipe']
 
     # Select lines for the 2eme coupe quebec CPS
-    df_tbl_notes = df_tbl_notes[df_tbl_notes['Competition'] == '2e Coupe - CPS']
+    # NB: the competition name changes every year, make sure to use the correct one
+    df_tbl_notes = df_tbl_notes[df_tbl_notes['Competition'] == '2e Coupe  - CPS']
 
     # select lines for current category
     categorie_selected = get_category(df_tbl_gymnastes)
@@ -87,7 +88,7 @@ def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymna
     # clear all values before updating
     ws.clear()
     # find the range of cells with the size of the dataframe
-    cell_list = ws.range('A1:image' + str(df_tbl_notes_with_gymnastes.shape[0]))
+    cell_list = ws.range('A1:I' + str(df_tbl_notes_with_gymnastes.shape[0]))
 
     cell_values = df_tbl_notes_with_gymnastes[['Nom', 'NomClub', 'sol', 'arcon', 'anneaux',
                                    'Saut', 'parallele', 'fixe', 'Total']].values.flatten()
@@ -137,3 +138,6 @@ while True:
     print('Website updated, waiting before next iteration... last update at ',
           time.strftime('%Hh%m', time.localtime()))
     time.sleep(30)
+
+# Make sure the destination page on googledrive is long enough, otherwise you will get a range error
+
