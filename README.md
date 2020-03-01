@@ -1,4 +1,4 @@
-This code was created for the Coupe Quebec 2018.  
+This code was initialy created for the Coupe Quebec 2018.  
 
 The data is entered in a Ms Access database on a separate computer.  
 This database is synced with Dropbox to a computer running the present code.
