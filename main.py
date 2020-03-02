@@ -7,11 +7,13 @@ import time
 from shutil import copyfile
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import pyodbc
+import os.path
 
 # constants
-PATH_DESTINATION = '/Users/rpgb/Documents/CoupeQuebec/2019'
-PRIVATE_KEY_JSON = '/Users/rpgb/Documents/CoupeQuebec/2019/MyProject8533_2019.json'
-ORIGINAL_DATABASE_PATH = '/Users/rpgb/Documents/CoupeQuebec/2019/GAM2eCoupeQcCPS_2019.mdb'
+PATH_DESTINATION = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020')
+PRIVATE_KEY_JSON = os.path.join(PATH_DESTINATION, 'MyProject8533_2020.json')
+ORIGINAL_DATABASE_PATH = os.path.join(PATH_DESTINATION, 'GAM-CPS_2019-2020.mdb')
 
 def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
     """
