@@ -9,11 +9,15 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pyodbc
 import os.path
+import numpy
 
 # constants
 PATH_DESTINATION = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020')
 PRIVATE_KEY_JSON = os.path.join(PATH_DESTINATION, 'MyProject8533_2020.json')
 ORIGINAL_DATABASE_PATH = os.path.join(PATH_DESTINATION, 'GAM-CPS_2019-2020.mdb')
+# set up some constants
+MDB = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020', 'GAM-CPS_2019-2020.mdb')
+MS_ACCESS_DRIVER = 'Microsoft Access Driver (*.mdb, *.accdb)'
 
 def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
     """
@@ -38,18 +42,22 @@ def get_info_to_be_displayed_from_database(path_to_local_database):
 
     # Select the desired tables and dump as CSV file using 'mdb-export'
     for table_name in ('tblNote', 'tblGymnaste'):
-        filename = PATH_DESTINATION + '/exportedTable_' + table_name + '.csv'
-        with open(filename, 'wb') as f:
-            subprocess.check_call(['mdb-export', path_to_local_database, table_name], stdout=f)
+        # connect to db
+        con = pyodbc.connect('DRIVER={};DBQ={}'.format(MS_ACCESS_DRIVER, path_to_local_database))
+        cur = con.cursor()
+        SQL = 'SELECT * FROM ' + table_name + ';'  # SQL query
+        rows = numpy.asarray(cur.execute(SQL).fetchall())
+        columns = [column[0] for column in cur.description]
+        cur.close()
+        con.close()
+        df = pandas.DataFrame(rows, columns=columns)
+        export_name = PATH_DESTINATION + '/exportedTable_' + table_name + '.csv'
+        df.to_csv(export_name, index=False)  # Don't forget to add '.csv' at the end of the path
 
     # load csv in dataframe to do join on data and export result in csv with pandas
     # in the df names, images keep the original table name
     df_tbl_notes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblNote.csv')
     df_tbl_gymnastes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblGymnaste.csv')
-
-    # switch NoAffiliation and idGymnaste which are inverted
-    df_tbl_gymnastes.columns = ['NoAffiliation', 'idGymnaste', 'Nom', 'Prenom', 'NomClub', 'Categorie',
-                                'Prov', 'Age', 'Equipe']
 
     # Select lines for the 2eme coupe quebec CPS
     # NB: the competition name changes every year, make sure to use the correct one
