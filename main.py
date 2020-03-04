@@ -56,12 +56,15 @@ def get_info_to_be_displayed_from_database(path_to_local_database):
 
     # load csv in dataframe to do join on data and export result in csv with pandas
     # in the df names, images keep the original table name
-    df_tbl_notes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblNote.csv')
-    df_tbl_gymnastes = pandas.read_csv(PATH_DESTINATION + '/exportedTable_tblGymnaste.csv')
+    df_tbl_notes = pandas.read_csv(os.path.join(PATH_DESTINATION, 'exportedTable_tblNote.csv'))
+    df_tbl_gymnastes = pandas.read_csv(os.path.join(PATH_DESTINATION, 'exportedTable_tblGymnaste.csv'))
+    # switch NoAffiliation and idGymnaste which are inverted
+    df_tbl_gymnastes.columns = ['NoAffiliation', 'idGymnaste', 'Nom', 'Prenom', 'NomClub', 'Categorie',
+                                'Prov', 'Age', 'Equipe', 'Cat_Equipe']
 
     # Select lines for the 2eme coupe quebec CPS
     # NB: the competition name changes every year, make sure to use the correct one
-    df_tbl_notes = df_tbl_notes[df_tbl_notes['Competition'] == '2e Coupe  - CPS']
+    df_tbl_notes = df_tbl_notes[df_tbl_notes['Competition'] == '2e Coupe Qc 2019-2020 - CPS']
 
     # select lines for current category
     categorie_selected = get_category(df_tbl_gymnastes)
@@ -98,6 +101,7 @@ def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymna
     # clear all values before updating
     ws.clear()
     # find the range of cells with the size of the dataframe
+    print(df_tbl_notes_with_gymnastes.shape)
     cell_list = ws.range('A1:I' + str(df_tbl_notes_with_gymnastes.shape[0]))
 
     cell_values = df_tbl_notes_with_gymnastes[['Nom', 'NomClub', 'sol', 'arcon', 'anneaux',
