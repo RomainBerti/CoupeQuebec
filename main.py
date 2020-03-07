@@ -12,11 +12,12 @@ import os.path
 import numpy
 
 # constants
-PATH_DESTINATION = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020')
-PRIVATE_KEY_JSON = os.path.join(PATH_DESTINATION, 'MyProject8533_2020.json')
-ORIGINAL_DATABASE_PATH = os.path.join(PATH_DESTINATION, 'GAM-CPS_2019-2020.mdb')
+PATH_DESTINATION = os.path.join('C:\\', 'Users', 'admin', 'Dropbox', 'CoupeQuebec', '2020', 'BDD-backup')
+PATH_LOCAL_DOCUMENTS = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020')
+PRIVATE_KEY_JSON = os.path.join(PATH_LOCAL_DOCUMENTS, 'MyProject8533_2020.json')
+PATH_TO_ORIGINAL_BDD = os.path.join('C:\\', 'Users', 'admin', 'Dropbox', 'CoupeQuebec', '2020')
+ORIGINAL_DATABASE_PATH = os.path.join(PATH_TO_ORIGINAL_BDD, 'GAM - CPS 2019-2020_corrected.mdb')
 # set up some constants
-MDB = os.path.join('C:\\', 'Users', 'admin', 'Documents', 'CoupeQuebec', '2020', 'GAM-CPS_2019-2020.mdb')
 MS_ACCESS_DRIVER = 'Microsoft Access Driver (*.mdb, *.accdb)'
 
 def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
@@ -26,7 +27,7 @@ def copy_mdb_file(ORIGINAL_DATABASE_PATH, PATH_DESTINATION):
     :return: path_to_local_database: full path with DB local filename that changes every hour
     """
     customed_timestamp = time.strftime('%Y%m%d_%Hh', time.localtime())
-    path_to_local_database = PATH_DESTINATION + '/2eCoupeQcGAM_' + customed_timestamp + '.mdb'
+    path_to_local_database = os.path.join(PATH_DESTINATION, '2eCoupeQcGAM_' + customed_timestamp + '.mdb')
 
     # copy and overwrite older file to update the data but keep a backup every hour
     copyfile(ORIGINAL_DATABASE_PATH, path_to_local_database)
@@ -101,7 +102,6 @@ def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymna
     # clear all values before updating
     ws.clear()
     # find the range of cells with the size of the dataframe
-    print(df_tbl_notes_with_gymnastes.shape)
     cell_list = ws.range('A1:I' + str(df_tbl_notes_with_gymnastes.shape[0]))
 
     cell_values = df_tbl_notes_with_gymnastes[['Nom', 'NomClub', 'sol', 'arcon', 'anneaux',
@@ -124,8 +124,8 @@ def get_category(df_tbl_gymnastes):
     # program
     if saturday_morning:
         # Saturday from 9am to 12pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 3 U13',
-                                                                'Niveau 3 13+', 'Élite 3'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 3 U13', 'Élite 3', 'Niveau 4 U13',
+                                                                 'Niveau 4 13+', 'Élite 4'])
     elif saturday_afternoon:
         # Saturday from 1pm to 5pm
         categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 5',
@@ -150,7 +150,7 @@ while True:
     df_tbl_notes_with_gymnastes = get_info_to_be_displayed_from_database(local_database)
     send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymnastes)
     print('Website updated, waiting before next iteration... last update at ',
-          time.strftime('%Hh%m', time.localtime()))
+          time.strftime('%Hh%Mm', time.localtime()))
     time.sleep(30)
 
 # Make sure the destination page on googledrive is long enough, otherwise you will get a range error
