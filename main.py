@@ -128,20 +128,19 @@ def get_category(df_tbl_gymnastes):
                                                                  'Niveau 4 13+', 'Élite 4'])
     elif saturday_afternoon:
         # Saturday from 1pm to 5pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 5',
-                                                                'National Ouvert', 'Junior', 'Senior'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['National Ouvert', 'Niveau 5',
+                                                                'Junior', 'Senior', ])
     elif saturday_evening:
         # Saturday from 5h45pm to 8pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 4 U13',
-                                                                'Niveau 4 13+'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 3 13+'])
     elif sunday_morning:
         # Sunday 8am to 12pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2A',
-                                                                'Niveau 2C'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2B', 'Niveau 2C',
+                                                                'Niveau 2A', 'Niveau 2D'])
     elif sunday_afternoon:
         # Sunday 12.30pm to 3.45pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2B',
-                                                                'Niveau 2D'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 1B', 'Niveau 1A',
+                                                                'Niveau 1C'])
     return categorie_selected
 
 
@@ -151,7 +150,7 @@ while True:
     send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymnastes)
     print('Website updated, waiting before next iteration... last update at ',
           time.strftime('%Hh%Mm', time.localtime()))
-    time.sleep(30)
+    time.sleep(60)
 
 # Make sure the destination page on googledrive is long enough, otherwise you will get a range error
 
