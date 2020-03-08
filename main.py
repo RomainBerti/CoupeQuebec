@@ -114,10 +114,10 @@ def send_to_google_spreadsheet_via_api(PRIVATE_KEY_JSON, df_tbl_notes_with_gymna
 
 def get_category(df_tbl_gymnastes):
     """ select a category by manually switching the boolean variables"""
-    saturday_morning = True
+    saturday_morning = False
     saturday_afternoon = False
     saturday_evening = False
-    sunday_morning = False
+    sunday_morning = True
     sunday_afternoon = False
     # sunday_evening = False
 
@@ -135,8 +135,8 @@ def get_category(df_tbl_gymnastes):
         categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 3 13+'])
     elif sunday_morning:
         # Sunday 8am to 12pm
-        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2B', 'Niveau 2C',
-                                                                'Niveau 2A', 'Niveau 2D'])
+        categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 2A', 'Niveau 2B',
+                                                                'Niveau 2C', 'Niveau 2D'])
     elif sunday_afternoon:
         # Sunday 12.30pm to 3.45pm
         categorie_selected = df_tbl_gymnastes['Categorie'].isin(['Niveau 1B', 'Niveau 1A',
